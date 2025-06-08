@@ -14,7 +14,9 @@ dependencies:
   - joblib
   - jupyterlab
   - pip
+  - seaborn
+   
   - pip:
       - backtrader
       - bt
-
+      - tensorflow
