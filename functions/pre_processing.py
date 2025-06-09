@@ -51,19 +51,22 @@ def build_eurusd_dataset(filename, hours_ahead=1):
     hours_ahead = 1
     steps = int(hours_ahead * 60 / 5)  # e.g., 12 steps = 1 hour ahead
 
-    # Predict return from current close to close N steps ahead
-    future_return = m5["Close"].shift(-steps) - m5["Close"]
-    future_return_pips = future_return * 10_000  # Convert to pips
+    future_high = m5['High'].rolling(window=steps).max().shift(-steps)
+    future_low = m5['Low'].rolling(window=steps).min().shift(-steps)
+    entry = m5['Close']
 
-    # New label: combines direction + magnitude
-    def classify_directional(p):
-        if p < -20: return 0  # strong short
-        elif p < -10: return 1  # weak short
-        elif p < 10: return 2   # no trade
-        elif p < 20: return 3   # weak long
-        elif p >= 20: return 4  # strong long
+    # Calculate max potential return up or down
+    up_pips = (future_high - entry) * 10_000
+    down_pips = (entry - future_low) * 10_000
 
-    m5['label'] = future_return_pips.apply(classify_directional)
+    def classify_from_extremes(up, down):
+        if down > 20: return 0  # strong short
+        elif down > 10: return 1  # weak short
+        elif up > 20: return 4  # strong long
+        elif up > 10: return 3  # weak long
+        else: return 2  # no trade
+
+    m5['label'] = [classify_from_extremes(u, d) for u, d in zip(up_pips, down_pips)]
     
     # ---- 7. Add temporal features --------------------------------------------
     m5["hour"]          = m5.index.hour
