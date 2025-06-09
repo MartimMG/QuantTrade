@@ -47,20 +47,24 @@ def build_eurusd_dataset(filename, hours_ahead=1):
     m5["roll_h1_relpos"] = (m5["Close"] - m5["roll_h1_low"]) / (m5["roll_h1_high"] - m5["roll_h1_low"] + 1e-6)
 
     # ---- 5. Build future-range label -----------------------------------------
-    steps = int(hours_ahead*60 / 5)          # e.g., 12 for 1h ahead
-    highs = m5["High"].rolling(steps).max().shift(-steps)
-    lows  = m5["Low"].rolling(steps).min().shift(-steps)
-    future_range_pips = (highs - lows) * 10_000
+    # Assumes 5-min candles
+    hours_ahead = 1
+    steps = int(hours_ahead * 60 / 5)  # e.g., 12 steps = 1 hour ahead
 
-    def classify(p):
-        if p < 10:  return 0
-        if p < 20:  return 1
-        if p < 30:  return 2
-        if p < 40:  return 3
-        return 4
+    # Predict return from current close to close N steps ahead
+    future_return = m5["Close"].shift(-steps) - m5["Close"]
+    future_return_pips = future_return * 10_000  # Convert to pips
 
-    m5["label"] = future_range_pips.apply(classify)
+    # New label: combines direction + magnitude
+    def classify_directional(p):
+        if p < -20: return 0  # strong short
+        elif p < -10: return 1  # weak short
+        elif p < 10: return 2   # no trade
+        elif p < 20: return 3   # weak long
+        elif p >= 20: return 4  # strong long
 
+    m5['label'] = future_return_pips.apply(classify_directional)
+    
     # ---- 7. Add temporal features --------------------------------------------
     m5["hour"]          = m5.index.hour
     m5["dayofweek"]     = m5.index.dayofweek
