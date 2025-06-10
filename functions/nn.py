@@ -87,7 +87,7 @@ def estimate_avg_duration_per_class(y, close_prices, highs, lows, sl_tp_map, cla
         duration_by_class[pred].append(duration)
 
     avg_duration_by_class = {
-        k: round(np.mean(v)) if v else 12 for k, v in duration_by_class.items()
+        k: round(np.mean(v)) if v else 7 for k, v in duration_by_class.items()
     }
     return avg_duration_by_class
 
