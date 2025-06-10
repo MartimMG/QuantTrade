@@ -49,13 +49,13 @@ def build_eurusd_dataset(filename, hours_ahead=1):
     # ---- 5. Build future-range label -----------------------------------------
     # Assumes 5-min candles
     hours_ahead = 1
-    steps = int(hours_ahead * 60 / 5)  # e.g., 12 steps = 1 hour ahead
+    steps = int(7)  # e.g., 7 steps = 35 minutes ahead
 
     future_high = m5['High'].rolling(window=steps).max().shift(-steps)
     future_low = m5['Low'].rolling(window=steps).min().shift(-steps)
     entry = m5['Close']
 
-    # Calculate max potential return up or down
+    # Calculate max potential return up or down, I will then relabel the data in the training loop
     up_pips = (future_high - entry) * 10_000
     down_pips = (entry - future_low) * 10_000
 
