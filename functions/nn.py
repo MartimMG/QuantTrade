@@ -91,6 +91,9 @@ def estimate_avg_duration_per_class(y, close_prices, highs, lows, sl_tp_map, cla
     }
     return avg_duration_by_class
 
+
+# not being used yet
+
 def relabel_data(df, sl_tp_map, avg_duration_by_class, class_to_direction):
     relabeled = []
     for i in range(len(df)):
