@@ -1,3 +1,7 @@
+import os
+import pandas as pd
+import ta  
+
 def build_eurusd_dataset(filename, hours_ahead=1):
     # ---- 1. Load raw M1 ASCII -----------------------------------------------
     file_path = os.path.join(os.getcwd(), filename)
@@ -48,27 +52,50 @@ def build_eurusd_dataset(filename, hours_ahead=1):
 
     # ---- 5. Build future-range label -----------------------------------------
     # Assumes 5-min candles
-    hours_ahead = 1
-    steps = int(7)  # e.g., 7 steps = 35 minutes ahead
+    max_steps = 8  # max candles to look ahead, put six to b more conservative
+    entry = m5['Close'].values
+    highs = m5['High'].values
+    lows = m5['Low'].values
 
-    future_high = m5['High'].rolling(window=steps).max().shift(-steps)
-    future_low = m5['Low'].rolling(window=steps).min().shift(-steps)
-    entry = m5['Close']
+    labels = []
 
-    # Calculate max potential return up or down, I will then relabel the data in the training loop
-    up_pips = (future_high - entry) * 10_000
-    down_pips = (entry - future_low) * 10_000
+    for i in range(len(m5)):
+        label = 2  # default: no trade
+        weak_label = None
 
-    def classify_from_extremes(up, down):
-        if down > 20: return 0  # strong short
-        elif down > 10: return 1  # weak short
-        elif up > 20: return 4  # strong long
-        elif up > 10: return 3  # weak long
-        else: return 2  # no trade
+        for step in range(1, max_steps + 1):
+            if i + step >= len(m5):
+                break
 
-    m5['label'] = [classify_from_extremes(u, d) for u, d in zip(up_pips, down_pips)]
+            future_high = highs[i + step]
+            future_low = lows[i + step]
+            up_pips = (future_high - entry[i]) * 10_000
+            down_pips = (entry[i] - future_low) * 10_000
+
+            # Strong signals - exit immediately
+            if down_pips > 20:
+                label = 0  # strong short
+                break
+            elif up_pips > 20:
+                label = 4  # strong long
+                break
+
+            # Capture first weak signal only
+            if weak_label is None:
+                if down_pips > 10:
+                    weak_label = 1  # weak short
+                elif up_pips > 10:
+                    weak_label = 3  # weak long
+
+        if label == 2 and weak_label is not None:
+            label = weak_label
+
+        labels.append(label)
+
+    m5['label'] = labels
+
     
-    # ---- 7. Add temporal features --------------------------------------------
+    # -7. Add temporal features --------------------------------------------
     m5["hour"]          = m5.index.hour
     m5["dayofweek"]     = m5.index.dayofweek
     m5["mins_into_m15"] = m5.index.minute % 15
@@ -76,5 +103,6 @@ def build_eurusd_dataset(filename, hours_ahead=1):
 
     # ---- 8. Drop NaNs caused by rolling / label shift ------------------------
     m5 = m5.dropna()
+    m5_outside_overlap = m5.drop(m5.between_time("12:00", "16:00").index)
 
-    return m5
+    return m5_outside_overlap
