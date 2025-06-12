@@ -169,6 +169,8 @@ def generate_model_report_pdf(
     risk_per_trade_percentage,        # Corrected name for clarity (e.g., 0.1 for mini lot)
     winning_trades,
     losing_trades,
+    profit_per_class,  # Dictionary with class labels as keys and total profit as values
+    trades_per_class,  # Dictionary with class labels as keys and total trades as values
     report_filename
 ):
     # --- 1. Calculate Overall Statistics ---
@@ -257,16 +259,16 @@ def generate_model_report_pdf(
     pdf.add_page()
 
     # Title Page
-    pdf.set_font("Arial", "B", 24)
+    pdf.set_font("Arial", "B", 20)
     pdf.cell(0, 10, "Trading Model Performance Report", 0, 1, "C")
     pdf.set_font("Arial", "", 12)
     pdf.cell(0, 10, f"Date: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}", 0, 1, "C")
-    pdf.ln(20)
+    pdf.ln(5)
 
     # Parameters Section
-    pdf.set_font("Arial", "B", 16)
+    pdf.set_font("Arial", "B", 14)
     pdf.cell(0, 10, "1. Backtest Parameters", 0, 1, "L")
-    pdf.set_font("Arial", "", 12)
+    pdf.set_font("Arial", "", 10)
     pdf.multi_cell(0, 7, f"""
     - Window Size: {window_size} candles
     - Validation Size: {val_size} candles
@@ -281,9 +283,9 @@ def generate_model_report_pdf(
     pdf.ln(5)
 
     # Overall Summary Statistics
-    pdf.set_font("Arial", "B", 16)
+    pdf.set_font("Arial", "B", 14)
     pdf.cell(0, 10, "2. Overall Performance Summary", 0, 1, "L")
-    pdf.set_font("Arial", "", 12)
+    pdf.set_font("Arial", "", 10)
     pdf.multi_cell(0, 7, f"""
     - Total Profit: ${total_profit:,.2f}
     - Total Trades: {total_trades:,}
@@ -298,6 +300,38 @@ def generate_model_report_pdf(
     """)
     pdf.ln(5)
 
+    # Profit per predicted class summary
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "3. Profit Per Predicted Class", 0, 1, "L")
+    pdf.set_font("Arial", "", 10)
+
+    for cls in sorted(profit_per_class.keys()):
+        total_profit_cls = profit_per_class[cls]
+        total_trades_cls = trades_per_class[cls]
+        avg_profit_cls = total_profit_cls / total_trades_cls if total_trades_cls else 0
+        pdf.cell(0, 7, f"Class {cls}: Trades = {total_trades_cls}, "
+                       f"Total Profit = ${total_profit_cls:,.2f}, "
+                       f"Avg Profit/Trade = ${avg_profit_cls:,.2f}", ln=1)
+
+    pdf.ln(3)
+
+    # Win rate
+    total_classified_trades = winning_trades + losing_trades
+    win_rate = (winning_trades / total_classified_trades) * 100 if total_classified_trades else 0
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "4. Risk Metrics", 0, 1, "L")
+    pdf.set_font("Arial", "", 10)
+    pdf.cell(0, 7, f"Win Rate: {win_rate:.2f}%", ln=1)
+
+    # Sharpe ratio calculation
+    returns = np.array(profit_monetary_per_window)
+    avg_return = np.mean(returns)
+    std_return = np.std(returns)
+    sharpe_ratio = avg_return / std_return if std_return > 0 else 0
+    pdf.cell(0, 7, f"Sharpe Ratio: {sharpe_ratio:.2f}", ln=1)
+
+    pdf.ln(5)
+
     # Plots Section
     pdf.add_page() # Add a new page for plots
     pdf.set_font("Arial", "B", 16)
@@ -306,7 +340,7 @@ def generate_model_report_pdf(
 
     # Add Plot 1
     pdf.image(plot1_path, x=10, y=pdf.get_y(), w=180)
-    pdf.ln(fig1.get_size_inches()[1] * 10) # Move cursor down after image
+    pdf.ln(fig1.get_size_inches()[1] * 13) # Move cursor down after image
 
     # Add Plot 2
     pdf.image(plot2_path, x=10, y=pdf.get_y(), w=180)
