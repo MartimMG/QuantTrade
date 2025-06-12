@@ -104,5 +104,6 @@ def build_eurusd_dataset(filename, hours_ahead=1):
     # ---- 8. Drop NaNs caused by rolling / label shift ------------------------
     m5 = m5.dropna()
     m5_outside_overlap = m5.drop(m5.between_time("12:00", "16:00").index)
+    m5_inside_overlap = m5.between_time("12:00", "16:00")
 
-    return m5_outside_overlap
+    return m5

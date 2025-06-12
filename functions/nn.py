@@ -5,7 +5,7 @@ from tensorflow.keras.utils import to_categorical
 
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Input
+from tensorflow.keras.layers import Dense, Dropout, Input, LSTM
 from sklearn.utils import class_weight
 
 import numpy as np
@@ -14,7 +14,24 @@ import seaborn as sns
 from fpdf import FPDF
 import os
 
-def build_model(input_dim):
+def create_lstm_sequences(data, labels, window_length):
+    X_seq, y_seq = [], []
+    for i in range(len(data) - window_length):
+        X_seq.append(data[i:i+window_length])
+        y_seq.append(labels[i+window_length]) 
+    return np.array(X_seq), np.array(y_seq)
+
+def build_model_rnn(window_length, num_features, num_classes):
+    model = Sequential([
+        Input(shape=(window_length, num_features)),
+        LSTM(64),
+        Dense(32, activation='relu'),
+        Dense(num_classes, activation='softmax')
+    ])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+def build_model_nn(input_dim):
     model = Sequential([
         Input(shape=(input_dim,)),
         Dense(64, activation='relu'),
@@ -150,6 +167,8 @@ def generate_model_report_pdf(
     cost_per_trade,
     pip_value_per_standard_lot, # Corrected name for clarity
     risk_per_trade_percentage,        # Corrected name for clarity (e.g., 0.1 for mini lot)
+    winning_trades,
+    losing_trades,
     report_filename
 ):
     # --- 1. Calculate Overall Statistics ---
@@ -274,6 +293,8 @@ def generate_model_report_pdf(
     - Final Account Balance: ${cumulative_balance_arr[-1]:,.2f}
     - All-time High Balance: ${np.max(cumulative_balance_arr):,.2f}
     - All-time Low Balance: ${np.min(cumulative_balance_arr):,.2f}
+    - Winning Trades: {winning_trades:,}
+    - Losing Trades: {losing_trades:,}
     """)
     pdf.ln(5)
 
