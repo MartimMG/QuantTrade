@@ -20,3 +20,5 @@ dependencies:
       - backtrader
       - bt
       - tensorflow
+      - oandapyV20
+      - MetaTrader5

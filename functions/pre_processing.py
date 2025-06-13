@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import ta  
 
-def build_eurusd_dataset(filename, hours_ahead=1):
+def build_eurusd_dataset(filename):
     # ---- 1. Load raw M1 ASCII -----------------------------------------------
     file_path = os.path.join(os.getcwd(), filename)
     df = pd.read_csv(

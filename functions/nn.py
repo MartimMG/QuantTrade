@@ -75,7 +75,7 @@ def optimize_sl_tp_per_class(y, close_prices, highs, lows, sl_values, tp_values,
                     if direction == 0:
                         continue
                     # Make sure we have enough future data
-                    if idx + 7 > len(close_prices):
+                    if idx + 7 > len(y):
                         continue
                     entry = close_prices[idx]
                     highs_seq = highs[idx:idx+7]
@@ -259,14 +259,14 @@ def generate_model_report_pdf(
     pdf.add_page()
 
     # Title Page
-    pdf.set_font("Arial", "B", 20)
+    pdf.set_font("Arial", "B", 16)
     pdf.cell(0, 10, "Trading Model Performance Report", 0, 1, "C")
-    pdf.set_font("Arial", "", 12)
+    pdf.set_font("Arial", "", 10)
     pdf.cell(0, 10, f"Date: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}", 0, 1, "C")
-    pdf.ln(5)
+    pdf.ln(3)
 
     # Parameters Section
-    pdf.set_font("Arial", "B", 14)
+    pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 10, "1. Backtest Parameters", 0, 1, "L")
     pdf.set_font("Arial", "", 10)
     pdf.multi_cell(0, 7, f"""
@@ -280,10 +280,10 @@ def generate_model_report_pdf(
     - Extra Steps in the simulate trade: {extra_steps}
     - Total Steps in the prediction: {steps}
     """)
-    pdf.ln(5)
+    pdf.ln(3)
 
     # Overall Summary Statistics
-    pdf.set_font("Arial", "B", 14)
+    pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 10, "2. Overall Performance Summary", 0, 1, "L")
     pdf.set_font("Arial", "", 10)
     pdf.multi_cell(0, 7, f"""
@@ -298,10 +298,10 @@ def generate_model_report_pdf(
     - Winning Trades: {winning_trades:,}
     - Losing Trades: {losing_trades:,}
     """)
-    pdf.ln(5)
+    pdf.ln(3)
 
     # Profit per predicted class summary
-    pdf.set_font("Arial", "B", 14)
+    pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 10, "3. Profit Per Predicted Class", 0, 1, "L")
     pdf.set_font("Arial", "", 10)
 
@@ -313,12 +313,12 @@ def generate_model_report_pdf(
                        f"Total Profit = ${total_profit_cls:,.2f}, "
                        f"Avg Profit/Trade = ${avg_profit_cls:,.2f}", ln=1)
 
-    pdf.ln(3)
+    pdf.ln(2)
 
     # Win rate
     total_classified_trades = winning_trades + losing_trades
     win_rate = (winning_trades / total_classified_trades) * 100 if total_classified_trades else 0
-    pdf.set_font("Arial", "B", 14)
+    pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 10, "4. Risk Metrics", 0, 1, "L")
     pdf.set_font("Arial", "", 10)
     pdf.cell(0, 7, f"Win Rate: {win_rate:.2f}%", ln=1)
@@ -330,13 +330,13 @@ def generate_model_report_pdf(
     sharpe_ratio = avg_return / std_return if std_return > 0 else 0
     pdf.cell(0, 7, f"Sharpe Ratio: {sharpe_ratio:.2f}", ln=1)
 
-    pdf.ln(5)
+    pdf.ln(2)
 
     # Plots Section
     pdf.add_page() # Add a new page for plots
-    pdf.set_font("Arial", "B", 16)
+    pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 10, "3. Performance Visualizations", 0, 1, "L")
-    pdf.ln(5)
+    pdf.ln(2)
 
     # Add Plot 1
     pdf.image(plot1_path, x=10, y=pdf.get_y(), w=180)
