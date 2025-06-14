@@ -8,8 +8,8 @@ import os
 import ta
 
 # 15 porque é preciso dados de uma hora atrás
-def get_latest_data(n=50):
-    rates = mt5.copy_rates_from_pos(SYMBOL, TIMEFRAME, 0, n)
+def get_latest_data(symbol, timeframe, n):
+    rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, n)
     df = pd.DataFrame(rates)
     df['time'] = pd.to_datetime(df['time'], unit='s')
     return df
@@ -74,18 +74,18 @@ def calculate_lot_size_multiplier(current_sl_pips, running_balance_in_window, ri
         return None
     return calculated_lot_size_multiplier
 
-def execute_trade(sl, tp, direction, lot_size_multiplier):
-    tick = mt5.symbol_info_tick(SYMBOL)
+def execute_trade(sl, tp, direction, lot_size_multiplier, symbol, deviation):
+    tick = mt5.symbol_info_tick(symbol)
     if direction == 1:
         order = {
             "action": mt5.TRADE_ACTION_DEAL,
-            "symbol": SYMBOL,
+            "symbol": symbol,
             "volume": lot_size_multiplier,
             "type": mt5.ORDER_TYPE_BUY,
             "price": tick.ask,
             "sl": tick.ask - sl * 0.0001,
             "tp": tick.ask + tp * 0.0001,
-            "deviation": DEVIATION,
+            "deviation": deviation,
             "magic": 123456,
             "comment": "ML Bot Buy",
             "type_time": mt5.ORDER_TIME_GTC,
@@ -95,13 +95,13 @@ def execute_trade(sl, tp, direction, lot_size_multiplier):
     elif direction == -1:
         order = {
             "action": mt5.TRADE_ACTION_DEAL,
-            "symbol": SYMBOL,
+            "symbol": symbol,
             "volume": lot_size_multiplier,
             "type": mt5.ORDER_TYPE_SELL,
             "price": tick.bid,
             "sl": tick.bid + sl * 0.0001,
             "tp": tick.bid - tp * 0.0001,
-            "deviation": DEVIATION,
+            "deviation": deviation,
             "magic": 123456,
             "comment": "ML Bot Sell",
             "type_time": mt5.ORDER_TIME_GTC,
